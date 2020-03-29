@@ -17,7 +17,7 @@ using namespace std;
 
 // To which file the image will be written
 const char* FILEPATH = "reflectionpic.ppm";
-const int NUMBER_OF_THREADS = 1;
+const int NUMBER_OF_THREADS = 100;
 
 // Window measurments
 const int WIDTH = 40;
@@ -33,10 +33,10 @@ const int MAX_DEPTH = 50;
 const double GAMMA_VALUE = 2.0;
 
 
-Vector3 RayColor(const Ray& r, const Hittable& world, int depth);
-HittableList RandomScene();
+Vector3 RayColor(const Ray& r, const Hitable& world, int depth);
+HitableList RandomScene();
 
-void threadAction(Camera& cam, const Hittable& world, array<array<Vector3, HEIGHT>, WIDTH>& colors, int i, int j);
+void threadAction(Camera& cam, const Hitable& world, array<array<Vector3, HEIGHT>, WIDTH>& colors, int offset);
 
 int main(void)
 {
@@ -46,7 +46,7 @@ int main(void)
 	file << "P3\n" << WIDTH << ' ' << HEIGHT << "\n255\n";
 
 	// Creating the World
-	HittableList world = RandomScene();
+	HitableList world = RandomScene();
 
 	Vector3 lookfrom = Vector3(13, 2, 3);
 	Vector3 lookat = Vector3(0, 0, 0);
@@ -65,12 +65,13 @@ int main(void)
 	}*/
 
 	// Creating array of all threads
-	thread threads[NUMBER_OF_THREADS];
+	array<std::thread, NUMBER_OF_THREADS> threads;
+	/*
 	for (int i = 0; i < NUMBER_OF_THREADS; i++)
 	{
 		threads[i] = thread([] {std::cout << "registered" << std::endl; });
 	}
-	/*
+	*/
 	for (int i = 0; i < NUMBER_OF_THREADS; i++)
 	{
 		threads[i] = thread(threadAction, cam, world, colors, i);
@@ -80,8 +81,8 @@ int main(void)
 	{
 		threads[i].join();
 	}
-	*/
-
+	
+	/*
 	int currentThread = 0;
 	for (int j = HEIGHT - 1; j >= 0; --j)
 	{
@@ -90,8 +91,8 @@ int main(void)
 		for (int i = 0; i < WIDTH; ++i)
 		{
 
-			threadAction(cam, world, colors, i, j);
-			/*
+			// threadAction(cam, world, colors, i, j);
+			
 			// Await thread and then call again
 			if (!threads[currentThread].joinable())
 			{
@@ -104,10 +105,11 @@ int main(void)
 			++currentThread;
 			if (currentThread >= NUMBER_OF_THREADS)
 				currentThread = 0;
-			*/
+			
 		}
+		
 	}
-
+	*/
 
 	// Drawing the picture
 	for (int j = HEIGHT - 1; j >= 0; --j)
@@ -116,6 +118,11 @@ int main(void)
 		{
 			colors[i][j].WriteColor(file, SAMPLES_PER_PIXEL_SQRT * SAMPLES_PER_PIXEL_SQRT, GAMMA_VALUE);
 		}
+	}
+
+	for (int i = 0; i < NUMBER_OF_THREADS; i++)
+	{
+		threads[i].join();
 	}
 
 	/*for (int i = 0; i < WIDTH; ++i)
@@ -129,13 +136,13 @@ int main(void)
 }
 
 
-void threadAction(Camera& cam, const Hittable& world, array<array<Vector3, HEIGHT>, WIDTH>& colors, int i, int j)
+void threadAction(Camera& cam, const Hitable& world, array<array<Vector3, HEIGHT>, WIDTH>& colors, int offset)
 {
-	/*
+	
 	for (int N = offset; N < WIDTH * HEIGHT; N += NUMBER_OF_THREADS)
 	{
 		int i = N % WIDTH;
-		int j = (N / WIDTH) % HEIGHT;*/
+		int j = (N / WIDTH) % HEIGHT;
 	Vector3 color;
 	// SAMPLING LINEAR
 	for (int xs = 1; xs <= SAMPLES_PER_PIXEL_SQRT; ++xs)
@@ -149,11 +156,11 @@ void threadAction(Camera& cam, const Hittable& world, array<array<Vector3, HEIGH
 		}
 	}
 	colors[i][j] = color;
-	//}
+}
 }
 
 // Color calculation
-Vector3 RayColor(const Ray& r, const Hittable& world, int depth)
+Vector3 RayColor(const Ray& r, const Hitable& world, int depth)
 {
 	if (depth <= 0)
 		return Vector3();
@@ -178,10 +185,10 @@ Vector3 RayColor(const Ray& r, const Hittable& world, int depth)
 	return (1.0 - t) * Vector3(1, 1, 1) + t * Vector3(0.5, 0.7, 1.0);
 }
 
-HittableList RandomScene() {
-	HittableList world = HittableList();
+HitableList RandomScene() {
+	HitableList world = HitableList();
 
-	world.add(make_shared<Sphere>(
+	world.Add(make_shared<Sphere>(
 		Vector3(0, -1000, 0), 1000, make_shared<Lambertian>(Vector3(.3, .5, .5))));
 
 	for (int a = -11; a < 11; a++)
@@ -196,7 +203,7 @@ HittableList RandomScene() {
 				{
 					//diffuse
 					Vector3 albedo = mult(Vector3::Random(), Vector3::Random());
-					world.add(
+					world.Add(
 						make_shared<Sphere>(center, .2, make_shared<Lambertian>(albedo))
 					);
 				}
@@ -205,25 +212,25 @@ HittableList RandomScene() {
 					// metal
 					Vector3 albedo = Vector3::Random(.5, 1);
 					double fuzz = ffrnd(0, .5);
-					world.add(
+					world.Add(
 						make_shared<Sphere>(center, .2, make_shared<Metal>(albedo, fuzz))
 					);
 				}
 				else
 				{
 					// glass
-					world.add(make_shared<Sphere>(center, .2, make_shared<Dielectric>(1.5)));
+					world.Add(make_shared<Sphere>(center, .2, make_shared<Dielectric>(1.5)));
 				}
 			}
 		}
 	}
 
-	world.add(make_shared<Sphere>(Vector3(0, 1, 0), 1.0, make_shared<Dielectric>(1.5)));
+	world.Add(make_shared<Sphere>(Vector3(0, 1, 0), 1.0, make_shared<Dielectric>(1.5)));
 
-	world.add(
+	world.Add(
 		make_shared<Sphere>(Vector3(-4, 1, 0), 1.0, make_shared<Lambertian>(Vector3(0.4, 0.2, 0.1))));
 
-	world.add(
+	world.Add(
 		make_shared<Sphere>(Vector3(4, 1, 0), 1.0, make_shared<Metal>(Vector3(0.7, 0.6, 0.5), 0.0)));
 
 	return world;

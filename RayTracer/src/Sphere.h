@@ -7,7 +7,7 @@
 #include "Vector3.h"
 
 class Sphere :
-	public Hittable
+	public Hitable
 {
 public:
 	double Radius;

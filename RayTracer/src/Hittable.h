@@ -22,7 +22,7 @@ struct HitRecord {
 	}
 };
 
-class Hittable {
+class Hitable {
 public:
 	virtual bool Hit(const Ray& r, double tMin, double tMax, HitRecord& rec) const = 0;
 };

@@ -11,34 +11,31 @@
 using std::shared_ptr;
 using std::make_shared;
 
-class HittableList
-	: public Hittable
+class HitableList
+	: public Hitable
 {
 private:
 	// std::mutex * mtx;
 
 public:
-	std::vector<shared_ptr<Hittable>> Objects;
+	std::vector<shared_ptr<Hitable>> Objects;
 
 public:
-	HittableList() {
+	HitableList() {
 		// mtx = new std::mutex();
 	}
-	HittableList(shared_ptr<Hittable> object) {
-		add(object);
+	HitableList(shared_ptr<Hitable> object) {
+		Add(object);
 		// mtx = new std::mutex();
-	}
-	~HittableList() {
-		// delete mtx;
 	}
 
 	void Clear() { Objects.clear(); }
-	void add(shared_ptr<Hittable> object) { Objects.push_back(object); }
+	void Add(shared_ptr<Hitable> object) { Objects.push_back(object); }
 
 	virtual bool Hit(const Ray& r, double tMin, double tMax, HitRecord& rec) const;
 };
 
-bool HittableList::Hit(const Ray& r, double tMin, double tMax, HitRecord& rec) const
+bool HitableList::Hit(const Ray& r, double tMin, double tMax, HitRecord& rec) const
 {
 	// std::lock_guard<std::mutex> lock(*mtx);
 	bool hitAnything = false;
