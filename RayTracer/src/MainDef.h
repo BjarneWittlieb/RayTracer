@@ -42,12 +42,6 @@ inline double clamp(double x, double min, double max)
 	return x;
 }
 
-enum DiffusionState {
-	RANDOM_IN_UNIT_SPHERE = 0,
-	LAMBERTIAN = 1,
-	RANDOM_IN_HEMISPHRERE = 2
-};
-
 // Common Headers
 
 #include "Ray.h"

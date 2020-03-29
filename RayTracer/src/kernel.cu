@@ -12,16 +12,17 @@
 #include <fstream>
 #include <thread>
 #include <array>
+#include <atomic>
 
 using namespace std;
 
 // To which file the image will be written
 const char* FILEPATH = "reflectionpic.ppm";
-const int NUMBER_OF_THREADS = 100;
+const int NUMBER_OF_THREADS = 4;
 
 // Window measurments
-const int WIDTH = 40;
-const int HEIGHT = 20;
+const int WIDTH = 400;
+const int HEIGHT = 200;
 const double ASPECT_RATIO = double(WIDTH) / HEIGHT;
 
 // Samples per pixel in Antiailising
@@ -32,6 +33,9 @@ const int MAX_DEPTH = 50;
 // Wich Gamma value to use in the gamma correction.
 const double GAMMA_VALUE = 2.0;
 
+std::atomic_ullong terminatedPixelAmount;
+
+array<array<Vector3, HEIGHT>, WIDTH> colors;
 
 Vector3 RayColor(const Ray& r, const Hitable& world, int depth);
 HitableList RandomScene();
@@ -56,60 +60,24 @@ int main(void)
 
 	Camera cam = Camera(lookfrom, lookat, vup, 20, ASPECT_RATIO, aperture, dist_to_focus);
 
-	// Creating colors array
-	array<array<Vector3, HEIGHT>, WIDTH> colors; // = (Vector3**)malloc(sizeof(Vector3*) * WIDTH);
-	
-	/*for (int i = 0; i < WIDTH; ++i)
-	{
-		colors[i] = (Vector3*)malloc(sizeof(Vector3*) * HEIGHT);
-	}*/
-
 	// Creating array of all threads
 	array<std::thread, NUMBER_OF_THREADS> threads;
-	/*
+
 	for (int i = 0; i < NUMBER_OF_THREADS; i++)
 	{
-		threads[i] = thread([] {std::cout << "registered" << std::endl; });
+		threads[i] = thread(threadAction, std::ref(cam), std::ref(world), std::ref(colors), i);
 	}
-	*/
-	for (int i = 0; i < NUMBER_OF_THREADS; i++)
+
+	while (terminatedPixelAmount < WIDTH * HEIGHT - 100)
 	{
-		threads[i] = thread(threadAction, cam, world, colors, i);
+		std::this_thread::sleep_for(std::chrono::milliseconds(500));
+		std::cout << "Percentage: " << 100.0 * (static_cast<double>(terminatedPixelAmount) / (WIDTH * HEIGHT)) << std::endl;
 	}
 
 	for (int i = 0; i < NUMBER_OF_THREADS; i++)
 	{
 		threads[i].join();
 	}
-	
-	/*
-	int currentThread = 0;
-	for (int j = HEIGHT - 1; j >= 0; --j)
-	{
-		if (j % 1 == 0)
-			std::cout << double(HEIGHT - j) / HEIGHT << "   PERCENT" << std::endl;
-		for (int i = 0; i < WIDTH; ++i)
-		{
-
-			// threadAction(cam, world, colors, i, j);
-			
-			// Await thread and then call again
-			if (!threads[currentThread].joinable())
-			{
-				cout << "fiuawfbaiwoubf " << i << " " << currentThread << " " << j << endl;
-				cin.get();
-			}
-			threads[currentThread].join();
-			threads[currentThread] = thread(threadAction, cam, world, colors, i, j);
-
-			++currentThread;
-			if (currentThread >= NUMBER_OF_THREADS)
-				currentThread = 0;
-			
-		}
-		
-	}
-	*/
 
 	// Drawing the picture
 	for (int j = HEIGHT - 1; j >= 0; --j)
@@ -120,43 +88,31 @@ int main(void)
 		}
 	}
 
-	for (int i = 0; i < NUMBER_OF_THREADS; i++)
-	{
-		threads[i].join();
-	}
-
-	/*for (int i = 0; i < WIDTH; ++i)
-	{
-		free(colors[i]);
-	}
-	free(colors);*/
-
 	file.close();
 	return 0;
 }
 
-
 void threadAction(Camera& cam, const Hitable& world, array<array<Vector3, HEIGHT>, WIDTH>& colors, int offset)
 {
-	
 	for (int N = offset; N < WIDTH * HEIGHT; N += NUMBER_OF_THREADS)
 	{
 		int i = N % WIDTH;
 		int j = (N / WIDTH) % HEIGHT;
-	Vector3 color;
-	// SAMPLING LINEAR
-	for (int xs = 1; xs <= SAMPLES_PER_PIXEL_SQRT; ++xs)
-	{
-		for (int ys = 1; ys <= SAMPLES_PER_PIXEL_SQRT; ++ys)
+		Vector3 color;
+		// SAMPLING LINEAR
+		for (int xs = 1; xs <= SAMPLES_PER_PIXEL_SQRT; ++xs)
 		{
-			double u = (double(i) + double(xs) / (SAMPLES_PER_PIXEL_SQRT + 2)) / double(WIDTH);
-			double v = (double(j) + double(ys) / (SAMPLES_PER_PIXEL_SQRT + 2)) / double(HEIGHT);
-			Ray r = cam.GetRay(u, v);
-			color += RayColor(r, world, MAX_DEPTH);
+			for (int ys = 1; ys <= SAMPLES_PER_PIXEL_SQRT; ++ys)
+			{
+				double u = (double(i) + double(xs) / (SAMPLES_PER_PIXEL_SQRT + 2)) / double(WIDTH);
+				double v = (double(j) + double(ys) / (SAMPLES_PER_PIXEL_SQRT + 2)) / double(HEIGHT);
+				Ray r = cam.GetRay(u, v);
+				color += RayColor(r, world, MAX_DEPTH);
+			}
 		}
+		colors[i][j] = color;
+		terminatedPixelAmount++;
 	}
-	colors[i][j] = color;
-}
 }
 
 // Color calculation
