@@ -14,18 +14,18 @@ class Lambertian : public Material
 {
 public:
 	Vector3 Albedo;
-	std::mutex* mtx;
+	// std::mutex* mtx;
 
 public:
 	Lambertian(const Vector3& a)
 		: Albedo(a)
 	{
-		mtx = new std::mutex();
+		// mtx = new std::mutex();
 	}
 
 	virtual bool Scatter(const Ray& rIn, const HitRecord& rec, Vector3& attenuation, Ray& scattered) const
 	{
-		std::lock_guard<std::mutex> lock(*mtx);
+		// std::lock_guard<std::mutex> lock(*mtx);
 		Vector3 scattDir = rec.Normal + RandomUnitVector();
 		scattered = Ray(rec.EntryPoint, scattDir);
 		attenuation = Albedo;
@@ -38,19 +38,19 @@ class Metal : public Material
 {
 public:
 	Vector3 Albedo;
-	std::mutex* mtx;
+	// std::mutex* mtx;
 	double Fuzz;
 
 public:
 	Metal(const Vector3& a, double f = 0)
 		: Albedo(a), Fuzz(f)
 	{
-		mtx = new std::mutex();
+		// mtx = new std::mutex();
 	}
 
 	virtual bool Scatter(const Ray& rIn, const HitRecord& rec, Vector3& attenuation, Ray& scattered) const
 	{
-		std::lock_guard<std::mutex> lock(*mtx);
+		// std::lock_guard<std::mutex> lock(*mtx);
 		// Reflecting at the right angle
 		Vector3 reflected = Reflect(rIn.Direction.Normalized(), rec.Normal);
 		scattered = Ray(rec.EntryPoint, reflected + Fuzz * RandomInUnitSphere());
@@ -73,16 +73,16 @@ class Dielectric : public Material
 {
 public:
 	double RefIdx;
-	std::mutex* mtx;
+	// std::mutex* mtx;
 
 public:
 	Dielectric(double ri) : RefIdx(ri) {
-		mtx = new std::mutex();
+		// mtx = new std::mutex();
 	}
 
 	virtual bool Scatter(const Ray& rIn, const HitRecord& rec, Vector3& attenuation, Ray& scattered) const
 	{
-		std::lock_guard<std::mutex> lock(*mtx);
+		// std::lock_guard<std::mutex> lock(*mtx);
 		attenuation = Vector3(1, 1, 1);
 		double etai_over_etat;
 		if (rec.FrontFace)

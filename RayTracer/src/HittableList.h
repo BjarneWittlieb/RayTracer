@@ -6,7 +6,7 @@
 #include "Hittable.h"
 #include <memory>
 #include <vector>
-#include <mutex>
+#include <iostream>
 
 using std::shared_ptr;
 using std::make_shared;
@@ -15,16 +15,22 @@ class HittableList
 	: public Hittable
 {
 private:
-	std::mutex * mtx;
+	// std::mutex * mtx;
 
 public:
 	std::vector<shared_ptr<Hittable>> Objects;
 
 public:
 	HittableList() {
-		mtx = new std::mutex();
+		// mtx = new std::mutex();
 	}
-	HittableList(shared_ptr<Hittable> object) { add(object); }
+	HittableList(shared_ptr<Hittable> object) {
+		add(object);
+		// mtx = new std::mutex();
+	}
+	~HittableList() {
+		// delete mtx;
+	}
 
 	void Clear() { Objects.clear(); }
 	void add(shared_ptr<Hittable> object) { Objects.push_back(object); }
@@ -34,7 +40,7 @@ public:
 
 bool HittableList::Hit(const Ray& r, double tMin, double tMax, HitRecord& rec) const
 {
-	std::lock_guard<std::mutex> lock(*mtx);
+	// std::lock_guard<std::mutex> lock(*mtx);
 	bool hitAnything = false;
 	double closestUntilNow = tMax;
 

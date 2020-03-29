@@ -13,14 +13,14 @@ public:
 	double Radius;
 	Vector3 Center;
 	shared_ptr<Material> MatPtr;
-	std::mutex *mtx;
+	// std::mutex *mtx;
 
 public:
 	Sphere() {}
 	Sphere(Vector3 cen, double r, shared_ptr<Material> m)
 		: Center(cen), Radius(r), MatPtr(m)
 	{
-		mtx = new std::mutex();
+		// mtx = new std::mutex();
 	}
 
 	virtual bool Hit(const Ray& r, double tMin, double tMax, HitRecord& rec) const;
@@ -28,7 +28,7 @@ public:
 
 bool Sphere::Hit(const Ray& r, double tMin, double tMax, HitRecord& rec) const
 {
-	std::lock_guard<std::mutex> lock(*mtx);
+	// std::lock_guard<std::mutex> lock(*mtx);
 	Vector3 oc = r.Origin - Center;
 	double a = r.Direction * r.Direction;
 	double halfB = (oc * r.Direction);
