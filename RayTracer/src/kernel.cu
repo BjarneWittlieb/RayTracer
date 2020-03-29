@@ -19,11 +19,11 @@ using namespace std;
 
 // To which file the image will be written
 const char* FILEPATH = "reflectionpic.ppm";
-const int NUMBER_OF_THREADS = 100;
+const int NUMBER_OF_THREADS = 1;
 
 // Window measurments
-const int WIDTH = 640;
-const int HEIGHT = 360;
+const int WIDTH = 40;
+const int HEIGHT = 20;
 const double ASPECT_RATIO = double(WIDTH) / HEIGHT;
 
 // Samples per pixel in Antiailising
@@ -90,21 +90,26 @@ HittableList RandomScene() {
 	return world;
 }
 
-void threadAction(Camera& cam, const Hittable& world, Vector3** colors, int i, int j)
+void threadAction(Camera& cam, const Hittable& world, Vector3** colors, int offset)
 {
-	Vector3 color;
-	// SAMPLING LINEAR
-	for (int xs = 1; xs <= SAMPLES_PER_PIXEL_SQRT; ++xs)
+	for (int N = offset; N < WIDTH * HEIGHT; N += NUMBER_OF_THREADS)
 	{
-		for (int ys = 1; ys <= SAMPLES_PER_PIXEL_SQRT; ++ys)
+		int i = N % WIDTH;
+		int j = (N / WIDTH) % HEIGHT;
+		Vector3 color;
+		// SAMPLING LINEAR
+		for (int xs = 1; xs <= SAMPLES_PER_PIXEL_SQRT; ++xs)
 		{
-			double u = (double(i) + double(xs) / (SAMPLES_PER_PIXEL_SQRT + 2)) / double(WIDTH);
-			double v = (double(j) + double(ys) / (SAMPLES_PER_PIXEL_SQRT + 2)) / double(HEIGHT);
-			Ray r = cam.GetRay(u, v);
-			color += RayColor(r, world, MAX_DEPTH);
+			for (int ys = 1; ys <= SAMPLES_PER_PIXEL_SQRT; ++ys)
+			{
+				double u = (double(i) + double(xs) / (SAMPLES_PER_PIXEL_SQRT + 2)) / double(WIDTH);
+				double v = (double(j) + double(ys) / (SAMPLES_PER_PIXEL_SQRT + 2)) / double(HEIGHT);
+				Ray r = cam.GetRay(u, v);
+				color += RayColor(r, world, MAX_DEPTH);
+			}
 		}
+		colors[j][i] = color;
 	}
-	colors[i][j] = color;
 }
 
 // Color calculation
@@ -158,14 +163,19 @@ int main(void)
 		colors[i] = (Vector3*)malloc(sizeof(Vector3*) * HEIGHT);
 	}
 
-	// Creating array with number of all threads
-	thread threads[100]; // = thread[100];  // (thread*) malloc(sizeof(thread) * NUMBER_OF_THREADS);
+	// Creating array of all threads
+	thread threads[NUMBER_OF_THREADS];
 	for (int i = 0; i < NUMBER_OF_THREADS; i++)
 	{
-		threads[i] = thread([] {cout << "Thread x" << " registered!" << endl; });
+		threads[i] = thread(threadAction, cam, world, colors, i);
 	}
 
+	for (int i = 0; i < NUMBER_OF_THREADS; i++)
+	{
+		threads[i].join();
+	}
 
+	/*
 	int currentThread = 0;
 	for (int j = HEIGHT - 1; j >= 0; --j)
 	{
@@ -189,6 +199,7 @@ int main(void)
 				currentThread = 0;
 		}
 	}
+	*/
 
 	// Drawing the picture
 	for (int j = HEIGHT - 1; j >= 0; --j)

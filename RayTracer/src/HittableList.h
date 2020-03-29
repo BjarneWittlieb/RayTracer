@@ -15,7 +15,7 @@ class HittableList
 	: public Hittable
 {
 private:
-	mutex * mtx;
+	std::mutex * mtx;
 
 public:
 	std::vector<shared_ptr<Hittable>> Objects;
@@ -34,7 +34,7 @@ public:
 
 bool HittableList::Hit(const Ray& r, double tMin, double tMax, HitRecord& rec) const
 {
-	lock_guard<mutex> lock(*mtx);
+	std::lock_guard<std::mutex> lock(*mtx);
 	bool hitAnything = false;
 	double closestUntilNow = tMax;
 
