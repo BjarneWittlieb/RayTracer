@@ -11,6 +11,7 @@
 #include <iostream>
 #include <fstream>
 #include <thread>
+#include <array>
 
 using namespace std;
 
@@ -35,7 +36,7 @@ const double GAMMA_VALUE = 2.0;
 Vector3 RayColor(const Ray& r, const Hittable& world, int depth);
 HittableList RandomScene();
 
-void threadAction(Camera& cam, const Hittable& world, Vector3** colors, int i, int j);
+void threadAction(Camera& cam, const Hittable& world, array<array<Vector3, HEIGHT>, WIDTH>& colors, int i, int j);
 
 int main(void)
 {
@@ -56,11 +57,12 @@ int main(void)
 	Camera cam = Camera(lookfrom, lookat, vup, 20, ASPECT_RATIO, aperture, dist_to_focus);
 
 	// Creating colors array
-	Vector3** colors = (Vector3**)malloc(sizeof(Vector3*) * WIDTH);
-	for (int i = 0; i < WIDTH; ++i)
+	array<array<Vector3, HEIGHT>, WIDTH> colors; // = (Vector3**)malloc(sizeof(Vector3*) * WIDTH);
+	
+	/*for (int i = 0; i < WIDTH; ++i)
 	{
 		colors[i] = (Vector3*)malloc(sizeof(Vector3*) * HEIGHT);
-	}
+	}*/
 
 	// Creating array of all threads
 	thread threads[NUMBER_OF_THREADS];
@@ -116,18 +118,18 @@ int main(void)
 		}
 	}
 
-	for (int i = 0; i < WIDTH; ++i)
+	/*for (int i = 0; i < WIDTH; ++i)
 	{
 		free(colors[i]);
 	}
-	free(colors);
+	free(colors);*/
 
 	file.close();
 	return 0;
 }
 
 
-void threadAction(Camera& cam, const Hittable& world, Vector3** colors, int i, int j)
+void threadAction(Camera& cam, const Hittable& world, array<array<Vector3, HEIGHT>, WIDTH>& colors, int i, int j)
 {
 	/*
 	for (int N = offset; N < WIDTH * HEIGHT; N += NUMBER_OF_THREADS)
